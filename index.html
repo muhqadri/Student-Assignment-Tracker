@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Assignment Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div>
+        <p class="eyebrow">STUDENT WORKSPACE</p>
+        <h1>Assignment Tracker</h1>
+        <p class="subtitle">Keep your coursework organized, one assignment at a time.</p>
+      </div>
+      <div class="date-chip" id="today-label"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="stats-grid" aria-label="Assignment summary">
+      <article class="stat-card"><span class="stat-label">Total assignments</span><strong id="total-count">0</strong></article>
+      <article class="stat-card"><span class="stat-label">In progress</span><strong id="active-count">0</strong></article>
+      <article class="stat-card"><span class="stat-label">Due soon</span><strong id="soon-count">0</strong></article>
+      <article class="stat-card"><span class="stat-label">Overdue</span><strong id="overdue-count">0</strong></article>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div><p class="eyebrow">GET STARTED</p><h2>Add an assignment</h2></div>
+      </div>
+      <form id="assignment-form" novalidate>
+        <div class="form-grid">
+          <label class="field field-wide">Assignment name
+            <input id="assignment-name" name="name" type="text" maxlength="100" placeholder="e.g., Network Security Lab" required>
+          </label>
+          <label class="field">Course
+            <input id="course-name" name="course" type="text" maxlength="80" placeholder="e.g., CS360" required>
+          </label>
+          <label class="field">Due date
+            <input id="due-date" name="dueDate" type="date" required>
+          </label>
+          <label class="field">Priority
+            <select id="priority" name="priority">
+              <option value="Low">Low</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="High">High</option>
+            </select>
+          </label>
+          <label class="field">Status
+            <select id="status" name="status">
+              <option value="Not Started" selected>Not Started</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </label>
+          <label class="field field-wide">Description <span class="optional">(optional)</span>
+            <textarea id="description" name="description" rows="2" maxlength="500" placeholder="Add notes or instructions..."></textarea>
+          </label>
+        </div>
+        <p id="form-message" class="message" role="alert" aria-live="polite"></p>
+        <div class="form-actions">
+          <button class="button button-primary" type="submit">＋ Add assignment</button>
+          <button class="button button-quiet" type="reset" id="reset-form">Clear form</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="list-heading">
+        <div><p class="eyebrow">YOUR COURSEWORK</p><h2>Assignments</h2></div>
+        <span id="list-count" class="count-pill">0 items</span>
+      </div>
+      <div class="toolbar">
+        <label class="search-field"><span class="sr-only">Search assignments</span><input id="search" type="search" placeholder="Search name or course..."></label>
+        <label class="filter-field"><span class="sr-only">Filter by status</span>
+          <select id="filter-status"><option value="All">All statuses</option><option>Not Started</option><option>In Progress</option><option>Completed</option><option>Overdue</option></select>
+        </label>
+        <label class="filter-field"><span class="sr-only">Filter by priority</span>
+          <select id="filter-priority"><option value="All">All priorities</option><option>High</option><option>Medium</option><option>Low</option></select>
+        </label>
+        <label class="filter-field"><span class="sr-only">Sort assignments</span>
+          <select id="sort-by"><option value="due-asc">Due date: earliest</option><option value="due-desc">Due date: latest</option><option value="priority">Priority: high first</option><option value="created">Recently added</option></select>
+        </label>
+      </div>
+      <div id="assignment-list" class="assignment-list"></div>
+      <div id="empty-state" class="empty-state">
+        <div class="empty-icon">✓</div>
+        <h3>No assignments found</h3>
+        <p>Add an assignment above, or change your search and filters.</p>
+      </div>
+      <p class="storage-note"><span class="storage-dot"></span> Saved in this browser on this device</p>
+    </section>
+    <footer>Student Assignment Tracker <span>·</span> Sprint 1 prototype</footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
