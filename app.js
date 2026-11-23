@@ -13,6 +13,9 @@ const searchInput = document.getElementById("search");
 const statusFilter = document.getElementById("filter-status");
 const priorityFilter = document.getElementById("filter-priority");
 const sortSelect = document.getElementById("sort-by");
+const formHeading = document.getElementById("form-heading");
+const submitButton = document.getElementById("submit-button");
+const cancelEditButton = document.getElementById("cancel-edit");
 
 const service = new AssignmentService({
   repository: new AssignmentRepository(window.localStorage, STORAGE_KEY),
@@ -21,6 +24,7 @@ const service = new AssignmentService({
   now: () => Date.now(),
   today: () => localDateString()
 });
+let editingId = null;
 
 function localDateString(date = new Date()) {
   const year = date.getFullYear();
@@ -154,6 +158,13 @@ function renderAssignments() {
       actions.append(reopenButton);
     }
 
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.className = "small-button";
+    editButton.textContent = "Edit";
+    editButton.addEventListener("click", () => startEditing(assignment));
+    actions.append(editButton);
+
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
     deleteButton.className = "small-button delete";
@@ -162,6 +173,7 @@ function renderAssignments() {
       if (window.confirm(`Delete "${assignment.name}"?`)) {
         const result = service.remove(assignment.id);
         if (!result.ok) showMessage(result.errors[0], "error");
+        if (editingId === assignment.id) stopEditing();
         renderAssignments();
       }
     });
@@ -196,19 +208,51 @@ function resetFormDefaults() {
   statusInput.value = "Not Started";
 }
 
+function startEditing(assignment) {
+  editingId = assignment.id;
+  nameInput.value = assignment.name;
+  courseInput.value = assignment.course;
+  dueInput.value = assignment.dueDate;
+  dueInput.removeAttribute("min"); // an overdue item must keep its original date
+  priorityInput.value = assignment.priority;
+  statusInput.value = assignment.status;
+  descriptionInput.value = assignment.description || "";
+  formHeading.textContent = "Edit assignment";
+  submitButton.textContent = "Save changes";
+  cancelEditButton.hidden = false;
+  showMessage("");
+  form.scrollIntoView({ behavior: "smooth", block: "center" });
+  nameInput.focus();
+}
+
+function stopEditing() {
+  editingId = null;
+  dueInput.min = localDateString();
+  formHeading.textContent = "Add an assignment";
+  submitButton.textContent = "＋ Add assignment";
+  cancelEditButton.hidden = true;
+  resetFormDefaults();
+}
+
 form.addEventListener("submit", event => {
   event.preventDefault();
-  const result = service.add(formValues());
+  const wasEditing = editingId !== null;
+  const result = wasEditing ? service.update(editingId, formValues()) : service.add(formValues());
   if (!result.ok) {
     showMessage(result.errors.join(" "), "error");
     return;
   }
-  resetFormDefaults();
-  showMessage("Assignment added and saved.", "success");
+  if (wasEditing) stopEditing(); else resetFormDefaults();
+  showMessage(wasEditing ? "Assignment updated and saved." : "Assignment added and saved.", "success");
   renderAssignments();
 });
 
-form.addEventListener("reset", () => showMessage(""));
+cancelEditButton.addEventListener("click", () => {
+  stopEditing();
+  showMessage("");
+});
+
+form.addEventListener("reset", () => { if (editingId === null) showMessage(""); });
 [searchInput, statusFilter, priorityFilter, sortSelect].forEach(control => {
   control.addEventListener("input", renderAssignments);
   control.addEventListener("change", renderAssignments);
