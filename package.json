@@ -1,0 +1,9 @@
+{
+  "name": "student-assignment-tracker",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Student Assignment Tracker (Sprint 2)",
+  "scripts": {
+    "test": "node --test"
+  }
+}

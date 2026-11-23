@@ -14,27 +14,13 @@ const statusFilter = document.getElementById("filter-status");
 const priorityFilter = document.getElementById("filter-priority");
 const sortSelect = document.getElementById("sort-by");
 
-let assignments = loadAssignments();
-
-function loadAssignments() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    const parsed = saved ? JSON.parse(saved) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    return [];
-  }
-}
-
-function saveAssignments() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(assignments));
-    return true;
-  } catch (error) {
-    showMessage("The browser could not save your assignments. Check your browser storage settings.", "error");
-    return false;
-  }
-}
+const service = new AssignmentService({
+  repository: new AssignmentRepository(window.localStorage, STORAGE_KEY),
+  validator: AssignmentValidator,
+  newId: () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+  now: () => Date.now(),
+  today: () => localDateString()
+});
 
 function localDateString(date = new Date()) {
   const year = date.getFullYear();
@@ -68,7 +54,7 @@ function showMessage(message, type = "") {
   formMessage.className = `message ${type}`.trim();
 }
 
-function updateDashboard() {
+function updateDashboard(assignments) {
   document.getElementById("total-count").textContent = assignments.length;
   document.getElementById("active-count").textContent =
     assignments.filter(a => a.status !== "Completed").length;
@@ -88,7 +74,8 @@ function makeBadge(text, extraClass = "") {
 }
 
 function renderAssignments() {
-  updateDashboard();
+  const assignments = service.list();
+  updateDashboard(assignments);
   list.replaceChildren();
 
   const query = searchInput.value.trim().toLowerCase();
@@ -156,22 +143,14 @@ function renderAssignments() {
       completeButton.type = "button";
       completeButton.className = "small-button complete";
       completeButton.textContent = "✓ Complete";
-      completeButton.addEventListener("click", () => {
-        assignment.status = "Completed";
-        saveAssignments();
-        renderAssignments();
-      });
+      completeButton.addEventListener("click", () => changeStatus(assignment.id, "Completed"));
       actions.append(completeButton);
     } else {
       const reopenButton = document.createElement("button");
       reopenButton.type = "button";
       reopenButton.className = "small-button";
       reopenButton.textContent = "Reopen";
-      reopenButton.addEventListener("click", () => {
-        assignment.status = "In Progress";
-        saveAssignments();
-        renderAssignments();
-      });
+      reopenButton.addEventListener("click", () => changeStatus(assignment.id, "In Progress"));
       actions.append(reopenButton);
     }
 
@@ -181,8 +160,8 @@ function renderAssignments() {
     deleteButton.textContent = "Delete";
     deleteButton.addEventListener("click", () => {
       if (window.confirm(`Delete "${assignment.name}"?`)) {
-        assignments = assignments.filter(item => item.id !== assignment.id);
-        saveAssignments();
+        const result = service.remove(assignment.id);
+        if (!result.ok) showMessage(result.errors[0], "error");
         renderAssignments();
       }
     });
@@ -194,39 +173,39 @@ function renderAssignments() {
   emptyState.classList.toggle("visible", visible.length === 0);
 }
 
-form.addEventListener("submit", event => {
-  event.preventDefault();
-  const name = nameInput.value.trim();
-  const course = courseInput.value.trim();
-  const dueDate = dueInput.value;
+function changeStatus(id, status) {
+  const result = service.setStatus(id, status);
+  if (!result.ok) showMessage(result.errors[0], "error");
+  renderAssignments();
+}
 
-  if (!name || !course || !dueDate) {
-    showMessage("Please enter an assignment name, course, and due date.", "error");
-    return;
-  }
-  if (dueDate < localDateString()) {
-    showMessage("The due date cannot be in the past. Choose today or a future date.", "error");
-    return;
-  }
-
-  assignments.push({
-    id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
-    name,
-    course,
-    dueDate,
+function formValues() {
+  return {
+    name: nameInput.value,
+    course: courseInput.value,
+    dueDate: dueInput.value,
     priority: priorityInput.value,
     status: statusInput.value,
-    description: descriptionInput.value.trim(),
-    createdAt: Date.now()
-  });
+    description: descriptionInput.value
+  };
+}
 
-  if (saveAssignments()) {
-    form.reset();
-    priorityInput.value = "Medium";
-    statusInput.value = "Not Started";
-    showMessage("Assignment added and saved.", "success");
-    renderAssignments();
+function resetFormDefaults() {
+  form.reset();
+  priorityInput.value = "Medium";
+  statusInput.value = "Not Started";
+}
+
+form.addEventListener("submit", event => {
+  event.preventDefault();
+  const result = service.add(formValues());
+  if (!result.ok) {
+    showMessage(result.errors.join(" "), "error");
+    return;
   }
+  resetFormDefaults();
+  showMessage("Assignment added and saved.", "success");
+  renderAssignments();
 });
 
 form.addEventListener("reset", () => showMessage(""));
