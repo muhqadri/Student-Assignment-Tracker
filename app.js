@@ -16,6 +16,8 @@ const sortSelect = document.getElementById("sort-by");
 const formHeading = document.getElementById("form-heading");
 const submitButton = document.getElementById("submit-button");
 const cancelEditButton = document.getElementById("cancel-edit");
+const exportButtons = document.querySelectorAll("[data-format]");
+const backupMessage = document.getElementById("backup-message");
 
 const service = new AssignmentService({
   repository: new AssignmentRepository(window.localStorage, STORAGE_KEY),
@@ -251,6 +253,28 @@ cancelEditButton.addEventListener("click", () => {
   stopEditing();
   showMessage("");
 });
+
+exportButtons.forEach(button => {
+  button.addEventListener("click", () => {
+    const result = AssignmentExporters.exportAssignments(button.dataset.format, service.list());
+    if (!result.ok) {
+      showBackupMessage(result.errors[0], "error");
+      return;
+    }
+    const url = URL.createObjectURL(new Blob([result.content], { type: result.mimeType }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = result.filename;
+    link.click();
+    URL.revokeObjectURL(url);
+    showBackupMessage(`Exported ${service.list().length} assignment(s) to ${result.filename}.`, "success");
+  });
+});
+
+function showBackupMessage(message, type = "") {
+  backupMessage.textContent = message;
+  backupMessage.className = `message ${type}`.trim();
+}
 
 form.addEventListener("reset", () => { if (editingId === null) showMessage(""); });
 [searchInput, statusFilter, priorityFilter, sortSelect].forEach(control => {
