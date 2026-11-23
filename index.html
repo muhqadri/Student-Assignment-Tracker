@@ -98,6 +98,8 @@
       <div class="form-actions">
         <button class="button button-quiet" type="button" data-format="csv">Export CSV</button>
         <button class="button button-quiet" type="button" data-format="json">Export JSON backup</button>
+        <label class="button button-primary" for="import-file">Import JSON backup</label>
+        <input id="import-file" class="sr-only" type="file" accept=".json,application/json">
       </div>
       <p id="backup-message" class="message" role="status" aria-live="polite"></p>
     </section>
@@ -107,6 +109,7 @@
   <script src="js/repository.js"></script>
   <script src="js/service.js"></script>
   <script src="js/exporters.js"></script>
+  <script src="js/backup.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
