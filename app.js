@@ -17,6 +17,7 @@ const formHeading = document.getElementById("form-heading");
 const submitButton = document.getElementById("submit-button");
 const cancelEditButton = document.getElementById("cancel-edit");
 const exportButtons = document.querySelectorAll("[data-format]");
+const importInput = document.getElementById("import-file");
 const backupMessage = document.getElementById("backup-message");
 
 const service = new AssignmentService({
@@ -269,6 +270,24 @@ exportButtons.forEach(button => {
     URL.revokeObjectURL(url);
     showBackupMessage(`Exported ${service.list().length} assignment(s) to ${result.filename}.`, "success");
   });
+});
+
+importInput.addEventListener("change", async () => {
+  const file = importInput.files[0];
+  importInput.value = "";
+  if (!file) return;
+  const parsed = BackupParser.parseBackup(await file.text());
+  if (!parsed.ok) {
+    showBackupMessage(parsed.errors[0], "error");
+    return;
+  }
+  const result = service.importAssignments(parsed.records);
+  if (!result.ok) {
+    showBackupMessage(`Import failed. ${result.errors.slice(0, 3).join(" ")} Nothing was changed.`, "error");
+    return;
+  }
+  showBackupMessage(`Imported ${result.imported} assignment(s); skipped ${result.skipped} already in your list.`, "success");
+  renderAssignments();
 });
 
 function showBackupMessage(message, type = "") {
