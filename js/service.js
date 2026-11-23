@@ -62,6 +62,37 @@
       this.assignments = previous.filter(a => a.id !== id);
       return this._persist(previous);
     }
+
+    // Import is all-or-nothing: one bad record rejects the whole file and nothing changes.
+    importAssignments(records) {
+      if (!Array.isArray(records)) return { ok: false, errors: ["The backup file must contain a list of assignments."] };
+      const errors = [];
+      const cleaned = [];
+      records.forEach((record, index) => {
+        if (record === null || typeof record !== "object") {
+          errors.push(`Item ${index + 1}: not a valid assignment.`);
+          return;
+        }
+        const result = this.validator.validateAssignment(record, { today: this.today(), allowPastDate: true });
+        if (!result.valid) {
+          errors.push(`Item ${index + 1}: ${result.errors[0]}`);
+          return;
+        }
+        cleaned.push({
+          id: typeof record.id === "string" && record.id ? record.id : this.newId(),
+          ...result.value,
+          createdAt: Number.isFinite(record.createdAt) ? record.createdAt : this.now()
+        });
+      });
+      if (errors.length) return { ok: false, errors };
+
+      const knownIds = new Set(this.assignments.map(a => a.id));
+      const fresh = cleaned.filter(item => !knownIds.has(item.id));
+      const previous = this.assignments;
+      this.assignments = [...previous, ...fresh];
+      const saved = this._persist(previous);
+      return saved.ok ? { ok: true, errors: [], imported: fresh.length, skipped: cleaned.length - fresh.length } : saved;
+    }
   }
   return AssignmentService;
 });
